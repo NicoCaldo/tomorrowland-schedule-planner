@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tomorrowland Lineup Selector</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      select {
+        margin: 10px 0;
+        padding: 5px;
+      }
+      button {
+        padding: 5px 10px;
+      }
+      #selectionHistory {
+        margin-top: 20px;
+      }
+      #selectionHistory h2 {
+        margin-bottom: 10px;
+      }
+      #selectionHistory ul {
+        padding-left: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Tomorrowland Lineup Selector</h1>
+    <div id="artistSelector"></div>
+    <div id="selectionHistory"></div>
+
+    <script>
+      let performances = [];
+      let selectedArtists = [];
+
+      async function loadData() {
+        const response = await fetch(
+          "TLBE24-W1-211903bb-da4c-445d-a1b3-6b17479a9fab.json"
+        );
+        const data = await response.json();
+        performances = data.performances;
+        showInitialArtists();
+      }
+
+      function showInitialArtists() {
+        const fridayNoonArtists = performances.filter(
+          (p) => p.day === "FRIDAY" && p.startTime.includes("12:00:00")
+        );
+
+        if (fridayNoonArtists.length === 0) {
+          showNoMoreArtists();
+          return;
+        }
+
+        const select = createSelect(
+          fridayNoonArtists,
+          "Choose an artist starting at 12:00 on Friday:"
+        );
+        const button = createButton("Select", () => selectArtist(select.value));
+
+        document.getElementById("artistSelector").innerHTML = "";
+        document.getElementById("artistSelector").append(select, button);
+      }
+
+      function selectArtist(artistId) {
+        const selectedArtist = performances.find((p) => p.id === artistId);
+        selectedArtists.push(selectedArtist);
+        showNextArtists();
+      }
+
+      function showNextArtists() {
+        const lastSelectedArtist = selectedArtists[selectedArtists.length - 1];
+        const endTime = moment(lastSelectedArtist.endTime);
+        const nextArtists = performances.filter(
+          (p) => p.day === "FRIDAY" && moment(p.startTime) > endTime
+        );
+
+        const uniqueStageArtists = nextArtists.reduce((acc, curr) => {
+          if (
+            !acc[curr.stage.name] ||
+            moment(curr.startTime) < moment(acc[curr.stage.name].startTime)
+          ) {
+            acc[curr.stage.name] = curr;
+          }
+          return acc;
+        }, {});
+
+        const sortedArtists = Object.values(uniqueStageArtists).sort(
+          (a, b) => moment(a.startTime) - moment(b.startTime)
+        );
+
+        if (sortedArtists.length === 0) {
+          showNoMoreArtists();
+          return;
+        }
+
+        const select = createSelect(
+          sortedArtists,
+          `Choose next artist after ${lastSelectedArtist.name}:`
+        );
+        const button = createButton("Select", () => selectArtist(select.value));
+
+        document.getElementById("artistSelector").innerHTML = "";
+        document.getElementById("artistSelector").append(select, button);
+      }
+
+      function showNoMoreArtists() {
+        document.getElementById("artistSelector").innerHTML =
+          "<p>No more artists available.</p>";
+        displaySelectionHistory();
+      }
+
+      function displaySelectionHistory() {
+        const historyDiv = document.getElementById("selectionHistory");
+        historyDiv.innerHTML = "<h2>Your Selected Artists:</h2>";
+        const list = document.createElement("ul");
+        selectedArtists.forEach((artist) => {
+          const listItem = document.createElement("li");
+          listItem.textContent = `${artist.name} - ${
+            artist.stage.name
+          } (${formatTime(artist.startTime)} - ${formatTime(artist.endTime)})`;
+          list.appendChild(listItem);
+        });
+        historyDiv.appendChild(list);
+      }
+
+      function createSelect(artists, label) {
+        const select = document.createElement("select");
+        select.innerHTML =
+          `<option value="">${label}</option>` +
+          artists
+            .map(
+              (a) =>
+                `<option value="${a.id}">${a.name} - ${
+                  a.stage.name
+                } (${formatTime(a.startTime)})</option>`
+            )
+            .join("");
+        return select;
+      }
+
+      function createButton(text, onClick) {
+        const button = document.createElement("button");
+        button.textContent = text;
+        button.onclick = onClick;
+        return button;
+      }
+
+      function formatTime(timeString) {
+        return moment(timeString).format("HH:mm");
+      }
+
+      loadData();
+    </script>
+  </body>
+</html>
