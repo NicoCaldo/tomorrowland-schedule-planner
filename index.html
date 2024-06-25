@@ -318,9 +318,9 @@
               <div class="selected-artist">
                 <img class="card-img-top" src="${
                   artist.artists[0].image
-                }" alt="${
-              artist.name
-            }" onerror="this.onerror=null;this.src='placeholder.jpg';">
+                }" alt="${artist.name}" onerror="showPlaceholder(this);">
+                <svg class="bd-placeholder-img card-img-top placeholder-svg img-thumbnail" style="display:none;" width="100%" height="80" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder" preserveAspectRatio="xMidYMid slice" focusable="false">
+                <rect width="100%" height="100%" fill="#868e96"></rect>
                 <strong title="${artist.name}">${artist.name}</strong>
                 <small>${artist.stage.name}</small><br>
                 <small>${artist.day}</small><br>
