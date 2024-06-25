@@ -52,6 +52,13 @@
         display: none;
         max-height: 80px;
       }
+      .offcanvas-toggle {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        z-index: 1050;
+        transition: opacity 0.3s ease-in-out;
+      }
     </style>
   </head>
   <body>
@@ -59,6 +66,48 @@
     <div id="currentSelection" class="text-center mb-3"></div>
     <div id="artistSelector" class="mb-4"></div>
     <div id="selectionHistory"></div>
+
+    <!-- Offcanvas toggle button -->
+    <button
+      id="offcanvasToggle"
+      class="btn btn-primary offcanvas-toggle"
+      type="button"
+      data-bs-toggle="offcanvas"
+      data-bs-target="#offcanvasBottom"
+      aria-controls="offcanvasBottom"
+    >
+      <i class="bi bi-calendar-week"></i> Costumized Timeline
+    </button>
+
+    <!-- Offcanvas -->
+    <div
+      class="offcanvas offcanvas-bottom"
+      tabindex="-1"
+      id="offcanvasBottom"
+      aria-labelledby="offcanvasBottomLabel"
+    >
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="offcanvasBottomLabel">
+          Tomorrowland Menu
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="offcanvas"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="offcanvas-body small">
+        <p>Welcome to the Tomorrowland Lineup Selector!</p>
+        <p>Use this tool to plan your perfect festival experience.</p>
+        <ul>
+          <li>Browse artists by time slot</li>
+          <li>Select your favorite performances</li>
+          <li>View your personalized schedule</li>
+        </ul>
+        <p>Enjoy the music and have an amazing time at Tomorrowland!</p>
+      </div>
+    </div>
 
     <script>
       let performances = [];
@@ -148,6 +197,7 @@
       function selectArtist(artistId) {
         const selectedArtist = performances.find((p) => p.id === artistId);
         selectedArtists.push(selectedArtist);
+        window.scrollTo(0, 0);
         showNextArtists();
       }
 
@@ -226,6 +276,22 @@
       }
 
       loadData();
+
+      // New code for toggling the menu button visibility
+      document.addEventListener("DOMContentLoaded", (event) => {
+        const offcanvasToggle = document.getElementById("offcanvasToggle");
+        const offcanvasBottom = document.getElementById("offcanvasBottom");
+
+        offcanvasBottom.addEventListener("show.bs.offcanvas", function () {
+          offcanvasToggle.style.opacity = "0";
+          offcanvasToggle.style.pointerEvents = "none";
+        });
+
+        offcanvasBottom.addEventListener("hidden.bs.offcanvas", function () {
+          offcanvasToggle.style.opacity = "1";
+          offcanvasToggle.style.pointerEvents = "auto";
+        });
+      });
     </script>
   </body>
 </html>
