@@ -38,6 +38,8 @@
     <script>
       let performances = [];
       let selectedArtists = [];
+      const days = ["FRIDAY", "SATURDAY", "SUNDAY"];
+      let currentDayIndex = 0;
 
       async function loadData() {
         const response = await fetch(
@@ -49,18 +51,23 @@
       }
 
       function showInitialArtists() {
-        const fridayNoonArtists = performances.filter(
-          (p) => p.day === "FRIDAY" && p.startTime.includes("12:00:00")
+        showArtistsForCurrentDay("12:00:00");
+      }
+
+      function showArtistsForCurrentDay(startTime) {
+        const currentDay = days[currentDayIndex];
+        const dayArtists = performances.filter(
+          (p) => p.day === currentDay && p.startTime.includes(startTime)
         );
 
-        if (fridayNoonArtists.length === 0) {
-          showNoMoreArtists();
+        if (dayArtists.length === 0) {
+          moveToNextDay();
           return;
         }
 
         const select = createSelect(
-          fridayNoonArtists,
-          "Choose an artist starting at 12:00 on Friday:"
+          dayArtists,
+          `Choose an artist starting at ${startTime} on ${currentDay}:`
         );
         const button = createButton("Select", () => selectArtist(select.value));
 
@@ -78,7 +85,8 @@
         const lastSelectedArtist = selectedArtists[selectedArtists.length - 1];
         const endTime = moment(lastSelectedArtist.endTime);
         const nextArtists = performances.filter(
-          (p) => p.day === "FRIDAY" && moment(p.startTime) > endTime
+          (p) =>
+            p.day === days[currentDayIndex] && moment(p.startTime) > endTime
         );
 
         const uniqueStageArtists = nextArtists.reduce((acc, curr) => {
@@ -96,7 +104,7 @@
         );
 
         if (sortedArtists.length === 0) {
-          showNoMoreArtists();
+          moveToNextDay();
           return;
         }
 
@@ -110,9 +118,18 @@
         document.getElementById("artistSelector").append(select, button);
       }
 
+      function moveToNextDay() {
+        currentDayIndex++;
+        if (currentDayIndex < days.length) {
+          showArtistsForCurrentDay("12:00:00");
+        } else {
+          showNoMoreArtists();
+        }
+      }
+
       function showNoMoreArtists() {
         document.getElementById("artistSelector").innerHTML =
-          "<p>No more artists available.</p>";
+          "<p>No more artists available for any day.</p>";
         displaySelectionHistory();
       }
 
@@ -122,9 +139,9 @@
         const list = document.createElement("ul");
         selectedArtists.forEach((artist) => {
           const listItem = document.createElement("li");
-          listItem.textContent = `${artist.name} - ${
-            artist.stage.name
-          } (${formatTime(artist.startTime)} - ${formatTime(artist.endTime)})`;
+          listItem.textContent = `${artist.name} - ${artist.stage.name} (${
+            artist.day
+          }, ${formatTime(artist.startTime)} - ${formatTime(artist.endTime)})`;
           list.appendChild(listItem);
         });
         historyDiv.appendChild(list);
