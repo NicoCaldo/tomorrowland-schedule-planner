@@ -59,6 +59,31 @@
         z-index: 1050;
         transition: opacity 0.3s ease-in-out;
       }
+      .offcanvas-body {
+        overflow-x: auto;
+      }
+      #selectedArtistsList .row {
+        flex-wrap: nowrap;
+        width: max-content;
+      }
+      #selectedArtistsList .col {
+        width: 150px;
+        flex: 0 0 auto;
+      }
+      .selected-artist {
+        font-size: 0.8rem;
+        margin-bottom: 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 5px;
+      }
+      .selected-artist strong {
+        font-size: 0.9rem;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
     </style>
   </head>
   <body>
@@ -70,7 +95,7 @@
     <!-- Offcanvas toggle button -->
     <button
       id="offcanvasToggle"
-      class="btn btn-primary offcanvas-toggle"
+      class="btn btn-secondary offcanvas-toggle"
       type="button"
       data-bs-toggle="offcanvas"
       data-bs-target="#offcanvasBottom"
@@ -81,7 +106,7 @@
 
     <!-- Offcanvas -->
     <div
-      class="offcanvas offcanvas-bottom"
+      class="offcanvas offcanvas-bottom h-50"
       tabindex="-1"
       id="offcanvasBottom"
       aria-labelledby="offcanvasBottomLabel"
@@ -98,14 +123,11 @@
         ></button>
       </div>
       <div class="offcanvas-body small">
-        <p>Welcome to the Tomorrowland Lineup Selector!</p>
-        <p>Use this tool to plan your perfect festival experience.</p>
-        <ul>
-          <li>Browse artists by time slot</li>
-          <li>Select your favorite performances</li>
-          <li>View your personalized schedule</li>
-        </ul>
-        <p>Enjoy the music and have an amazing time at Tomorrowland!</p>
+        <div id="selectedArtistsList">
+          <p>
+            You haven't selected any artists yet. Start building your lineup!
+          </p>
+        </div>
       </div>
     </div>
 
@@ -197,6 +219,7 @@
       function selectArtist(artistId) {
         const selectedArtist = performances.find((p) => p.id === artistId);
         selectedArtists.push(selectedArtist);
+        updateOffcanvasContent();
         window.scrollTo(0, 0);
         showNextArtists();
       }
@@ -275,6 +298,44 @@
         return moment(timeString).format("HH:mm");
       }
 
+      function updateOffcanvasContent() {
+        const selectedArtistsList = document.getElementById(
+          "selectedArtistsList"
+        );
+        if (selectedArtists.length === 0) {
+          selectedArtistsList.innerHTML =
+            "<p>You haven't selected any artists yet. Start building your lineup!</p>";
+        } else {
+          selectedArtistsList.innerHTML =
+            "<h6 class='mb-4'>Your Selected Artists:</h6>";
+          const row = document.createElement("div");
+          row.className = "row g-2";
+
+          selectedArtists.forEach((artist) => {
+            const col = document.createElement("div");
+            col.className = "col";
+            col.innerHTML = `
+              <div class="selected-artist">
+                <img class="card-img-top" src="${
+                  artist.artists[0].image
+                }" alt="${
+              artist.name
+            }" onerror="this.onerror=null;this.src='placeholder.jpg';">
+                <strong title="${artist.name}">${artist.name}</strong>
+                <small>${artist.stage.name}</small><br>
+                <small>${artist.day}</small><br>
+                <small>${formatTime(artist.startTime)} - ${formatTime(
+              artist.endTime
+            )}</small>
+              </div>
+            `;
+            row.appendChild(col);
+          });
+
+          selectedArtistsList.appendChild(row);
+        }
+      }
+
       loadData();
 
       // New code for toggling the menu button visibility
@@ -285,6 +346,7 @@
         offcanvasBottom.addEventListener("show.bs.offcanvas", function () {
           offcanvasToggle.style.opacity = "0";
           offcanvasToggle.style.pointerEvents = "none";
+          updateOffcanvasContent();
         });
 
         offcanvasBottom.addEventListener("hidden.bs.offcanvas", function () {
