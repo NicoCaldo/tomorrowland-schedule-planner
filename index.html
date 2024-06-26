@@ -20,6 +20,7 @@
       integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
       crossorigin="anonymous"
     ></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/3.0.1/js.cookie.min.js"></script>
     <style>
       body {
         max-width: 800px;
@@ -143,7 +144,12 @@
         );
         const data = await response.json();
         performances = data.performances;
-        showInitialArtists();
+        loadSelectedArtistsFromCookie();
+        if (selectedArtists.length > 0) {
+          showNextArtists();
+        } else {
+          showInitialArtists();
+        }
       }
 
       function showInitialArtists() {
@@ -220,6 +226,7 @@
         const selectedArtist = performances.find((p) => p.id === artistId);
         selectedArtists.push(selectedArtist);
         updateOffcanvasContent();
+        saveSelectedArtistsToCookie();
         window.scrollTo(0, 0);
         showNextArtists();
       }
@@ -311,7 +318,7 @@
           const row = document.createElement("div");
           row.className = "row g-2";
 
-          selectedArtists.forEach((artist) => {
+          selectedArtists.forEach((artist, index) => {
             const col = document.createElement("div");
             col.className = "col";
             col.innerHTML = `
@@ -327,6 +334,7 @@
                 <small>${formatTime(artist.startTime)} - ${formatTime(
               artist.endTime
             )}</small>
+              <button class="btn btn-sm btn-danger mt-2" onclick="removeArtist(${index})">Remove</button>
               </div>
             `;
             row.appendChild(col);
@@ -336,7 +344,32 @@
         }
       }
 
+      function removeArtist(index) {
+        selectedArtists.splice(index, 1);
+        updateOffcanvasContent();
+        saveSelectedArtistsToCookie();
+        if (selectedArtists.length > 0) {
+          showNextArtists();
+        } else {
+          showInitialArtists();
+        }
+      }
+
       loadData();
+
+      function loadSelectedArtistsFromCookie() {
+        const savedArtists = Cookies.get("selectedArtists");
+        if (savedArtists) {
+          selectedArtists = JSON.parse(savedArtists);
+          updateOffcanvasContent();
+        }
+      }
+
+      function saveSelectedArtistsToCookie() {
+        Cookies.set("selectedArtists", JSON.stringify(selectedArtists), {
+          expires: 7,
+        }); // Expires in 7 days
+      }
 
       // New code for toggling the menu button visibility
       document.addEventListener("DOMContentLoaded", (event) => {
