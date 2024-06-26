@@ -53,12 +53,19 @@
         display: none;
         max-height: 80px;
       }
-      .offcanvas-toggle {
+      .offcanvas-toggle,
+      .delete-cookies {
         position: fixed;
-        bottom: 20px;
         left: 20px;
         z-index: 1050;
         transition: opacity 0.3s ease-in-out;
+        min-width: 200px;
+      }
+      .offcanvas-toggle {
+        bottom: 20px;
+      }
+      .delete-cookies {
+        bottom: 60px;
       }
       .offcanvas-body {
         overflow-x: auto;
@@ -128,6 +135,56 @@
           <p>
             You haven't selected any artists yet. Start building your lineup!
           </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Cookies button -->
+    <button
+      id="deleteCookiesBtn"
+      class="btn btn-danger delete-cookies d-none"
+      type="button"
+    >
+      <i class="bi bi-trash"></i> Delete Saved Lineup
+    </button>
+
+    <!-- Confirmation Modal -->
+    <div
+      class="modal fade"
+      id="confirmDeleteModal"
+      tabindex="-1"
+      aria-labelledby="confirmDeleteModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="confirmDeleteModalLabel">
+              Confirm Deletion
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            Are you sure you want to delete your saved lineup? This action
+            cannot be undone.
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+              Delete
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -419,13 +476,25 @@
         if (savedArtists) {
           selectedArtists = JSON.parse(savedArtists);
           updateOffcanvasContent();
+          showActionButtons(true);
+        } else {
+          showActionButtons(false);
         }
       }
 
       function saveSelectedArtistsToCookie() {
         Cookies.set("selectedArtists", JSON.stringify(selectedArtists), {
           expires: 7,
-        }); // Expires in 7 days
+        });
+        showActionButtons(true);
+      }
+
+      function deleteCookies() {
+        Cookies.remove("selectedArtists");
+        selectedArtists = [];
+        updateOffcanvasContent();
+        showActionButtons(false);
+        showInitialArtists();
       }
 
       function findReplacementOptions(removedArtist) {
@@ -438,6 +507,18 @@
         );
       }
 
+      function showActionButtons(show) {
+        const deleteCookiesBtn = document.getElementById("deleteCookiesBtn");
+        const offcanvasToggle = document.getElementById("offcanvasToggle");
+        if (show) {
+          deleteCookiesBtn.classList.remove("d-none");
+          offcanvasToggle.classList.remove("d-none");
+        } else {
+          deleteCookiesBtn.classList.add("d-none");
+          offcanvasToggle.classList.add("d-none");
+        }
+      }
+
       loadData();
 
       // New code for toggling the menu button visibility
@@ -445,15 +526,36 @@
         const offcanvasToggle = document.getElementById("offcanvasToggle");
         const offcanvasBottom = document.getElementById("offcanvasBottom");
 
+        const deleteCookiesBtn = document.getElementById("deleteCookiesBtn");
+        const confirmDeleteModal = new bootstrap.Modal(
+          document.getElementById("confirmDeleteModal")
+        );
+        const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+
         offcanvasBottom.addEventListener("show.bs.offcanvas", function () {
+          deleteCookiesBtn.style.opacity = "0";
+          deleteCookiesBtn.style.pointerEvents = "none";
+
           offcanvasToggle.style.opacity = "0";
           offcanvasToggle.style.pointerEvents = "none";
           updateOffcanvasContent();
         });
 
         offcanvasBottom.addEventListener("hidden.bs.offcanvas", function () {
+          deleteCookiesBtn.style.opacity = "1";
+          deleteCookiesBtn.style.pointerEvents = "auto";
+
           offcanvasToggle.style.opacity = "1";
           offcanvasToggle.style.pointerEvents = "auto";
+        });
+
+        deleteCookiesBtn.addEventListener("click", function () {
+          confirmDeleteModal.show();
+        });
+
+        confirmDeleteBtn.addEventListener("click", function () {
+          deleteCookies();
+          confirmDeleteModal.hide();
         });
       });
     </script>
