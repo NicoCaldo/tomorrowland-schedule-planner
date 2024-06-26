@@ -23,18 +23,41 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/3.0.1/js.cookie.min.js"></script>
     <style>
       body {
-        max-width: 800px;
+        max-width: 1000px;
         margin: 0 auto;
         padding: 20px;
       }
       #artistSelector {
-        display: flex;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
         gap: 15px;
         justify-content: center;
       }
       .artist-card {
-        width: 200px;
+        width: 100%;
+        position: relative;
+        padding-bottom: 40px; /* Add space for the button */
+      }
+      .select-artist {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        border-radius: 0 0 0.25rem 0.25rem;
+      }
+      .select-artist-text {
+        margin-left: 5px;
+      }
+      /* Add this new style for the image container */
+      .image-container {
+        padding: 1rem;
+        padding-bottom: 0; /* Remove bottom padding as it's handled by card-body */
+      }
+      /* Update placeholder SVG styles */
+      .placeholder-svg {
+        display: none;
+        max-height: 80px;
       }
       #selectionHistory {
         margin-top: 20px;
@@ -55,17 +78,17 @@
       }
       .offcanvas-toggle,
       .delete-cookies {
+        position: static;
+        left: auto;
+        bottom: auto;
+      }
+      .button-container {
         position: fixed;
         left: 20px;
-        z-index: 1050;
-        transition: opacity 0.3s ease-in-out;
-        min-width: 200px;
-      }
-      .offcanvas-toggle {
         bottom: 20px;
-      }
-      .delete-cookies {
-        bottom: 60px;
+        z-index: 1001;
+        width: auto;
+        transition: all 0.3s ease-in-out;
       }
       .offcanvas-body {
         overflow-x: auto;
@@ -92,6 +115,52 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
+      /* Responsive adjustments */
+      @media (max-width: 992px) {
+        #artistSelector {
+          grid-template-columns: repeat(
+            3,
+            1fr
+          ); /* 3 columns on medium screens */
+        }
+      }
+      @media (max-width: 768px) {
+        #artistSelector {
+          grid-template-columns: repeat(
+            2,
+            1fr
+          ); /* 2 columns on small screens */
+        }
+      }
+      @media (max-width: 576px) {
+        #artistSelector {
+          grid-template-columns: 1fr; /* 1 column on very small screens */
+        }
+      }
+      @media (max-width: 1450px) {
+        body {
+          padding-bottom: 120px;
+        }
+        .gradient-overlay {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 220px;
+          background: linear-gradient(
+            to bottom,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 1) 50%
+          );
+          pointer-events: none;
+          z-index: 1000;
+        }
+        .button-container {
+          left: 50%;
+          transform: translateX(-50%);
+          width: calc(100% - 40px);
+        }
+      }
     </style>
   </head>
   <body>
@@ -99,18 +168,29 @@
     <div id="currentSelection" class="text-center mb-3"></div>
     <div id="artistSelector" class="mb-4"></div>
     <div id="selectionHistory"></div>
+    <div class="gradient-overlay"></div>
 
-    <!-- Offcanvas toggle button -->
-    <button
-      id="offcanvasToggle"
-      class="btn btn-secondary offcanvas-toggle"
-      type="button"
-      data-bs-toggle="offcanvas"
-      data-bs-target="#offcanvasBottom"
-      aria-controls="offcanvasBottom"
-    >
-      <i class="bi bi-calendar-week"></i> Costumized Timeline
-    </button>
+    <div class="button-container">
+      <div class="d-grid gap-2">
+        <button
+          id="deleteCookiesBtn"
+          class="btn btn-danger delete-cookies"
+          type="button"
+        >
+          <i class="bi bi-trash"></i> Delete Saved Lineup
+        </button>
+        <button
+          id="offcanvasToggle"
+          class="btn btn-secondary offcanvas-toggle"
+          type="button"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#offcanvasBottom"
+          aria-controls="offcanvasBottom"
+        >
+          <i class="bi bi-calendar-week"></i> Customized Timeline
+        </button>
+      </div>
+    </div>
 
     <!-- Offcanvas -->
     <div
@@ -138,15 +218,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Delete Cookies button -->
-    <button
-      id="deleteCookiesBtn"
-      class="btn btn-danger delete-cookies d-none"
-      type="button"
-    >
-      <i class="bi bi-trash"></i> Delete Saved Lineup
-    </button>
 
     <!-- Confirmation Modal -->
     <div
@@ -200,7 +271,9 @@
           "TLBE24-W1-211903bb-da4c-445d-a1b3-6b17479a9fab.json"
         );
         const data = await response.json();
-        performances = data.performances;
+        performances = data.performances.filter(
+          (artist) => !artist.name.startsWith("Mc ")
+        ); // Filter out artists starting with "Mc "
         loadSelectedArtistsFromCookie();
         if (selectedArtists.length > 0) {
           showNextArtists();
@@ -252,24 +325,29 @@
         card.classList.add("card", "text-bg-dark", "artist-card");
 
         card.innerHTML = `
-          <div class="card-body">
+          <div class="image-container">
             <img src="${
               artist.artists[0].image
             }?width=250" class="card-img-top img-thumbnail" alt="${
           artist.name
         }" onerror="showPlaceholder(this);">
-        <svg class="bd-placeholder-img card-img-top placeholder-svg img-thumbnail" style="display:none;" width="100%" height="80" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder" preserveAspectRatio="xMidYMid slice" focusable="false">
-        <rect width="100%" height="100%" fill="#868e96"></rect>
-        </svg>
+            <svg class="bd-placeholder-img card-img-top placeholder-svg img-thumbnail" style="display:none;" width="100%" height="80" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder" preserveAspectRatio="xMidYMid slice" focusable="false">
+              <rect width="100%" height="100%" fill="#868e96"></rect>
+            </svg>
+          </div>
+          <div class="card-body">
             <h5 class="card-title">${artist.name}</h5>
             <p class="card-text">${artist.stage.name}</p>
             <p class="card-text">${formatTime(artist.startTime)} - ${formatTime(
           artist.endTime
         )}</p>
-            <button class="btn select-artist" data-artist-id="${
-              artist.id
-            }"><i class="bi bi-plus-circle-fill text-light"></i></button>
           </div>
+          <button class="btn btn-primary select-artist" data-artist-id="${
+            artist.id
+          }">
+            <i class="bi bi-plus-circle-fill"></i>
+            <span class="select-artist-text">Select</span>
+          </button>
         `;
 
         card
@@ -311,7 +389,8 @@
             moment(p.startTime) >= startTimeThreshold &&
             moment(p.startTime) <= endTime &&
             p.id !== lastSelectedArtist.id &&
-            !selectedArtists.some((selected) => selected.id === p.id)
+            !selectedArtists.some((selected) => selected.id === p.id) &&
+            !p.name.startsWith("Mc ")
         );
 
         const uniqueStageArtists = nextArtists.reduce((acc, curr) => {
@@ -442,7 +521,8 @@
             artist.day === removedArtist.day &&
             artist.startTime === removedArtist.startTime &&
             artist.endTime === removedArtist.endTime &&
-            !selectedArtists.some((selected) => selected.id === artist.id)
+            !selectedArtists.some((selected) => selected.id === artist.id) &&
+            !artist.name.startsWith("Mc ")
         );
       }
 
@@ -521,14 +601,11 @@
       }
 
       function showActionButtons(show) {
-        const deleteCookiesBtn = document.getElementById("deleteCookiesBtn");
-        const offcanvasToggle = document.getElementById("offcanvasToggle");
+        const buttonContainer = document.querySelector(".button-container");
         if (show) {
-          deleteCookiesBtn.classList.remove("d-none");
-          offcanvasToggle.classList.remove("d-none");
+          buttonContainer.style.display = "block";
         } else {
-          deleteCookiesBtn.classList.add("d-none");
-          offcanvasToggle.classList.add("d-none");
+          buttonContainer.style.display = "none";
         }
       }
 
