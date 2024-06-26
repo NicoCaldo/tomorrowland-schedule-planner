@@ -78,17 +78,17 @@
       }
       .offcanvas-toggle,
       .delete-cookies {
+        position: static;
+        left: auto;
+        bottom: auto;
+      }
+      .button-container {
         position: fixed;
         left: 20px;
-        z-index: 1001;
-        transition: opacity 0.3s ease-in-out;
-        min-width: 200px;
-      }
-      .offcanvas-toggle {
         bottom: 20px;
-      }
-      .delete-cookies {
-        bottom: 60px;
+        z-index: 1001;
+        width: auto;
+        transition: all 0.3s ease-in-out;
       }
       .offcanvas-body {
         overflow-x: auto;
@@ -155,6 +155,11 @@
           pointer-events: none;
           z-index: 1000;
         }
+        .button-container {
+          left: 50%;
+          transform: translateX(-50%);
+          width: calc(100% - 40px);
+        }
       }
     </style>
   </head>
@@ -165,17 +170,27 @@
     <div id="selectionHistory"></div>
     <div class="gradient-overlay"></div>
 
-    <!-- Offcanvas toggle button -->
-    <button
-      id="offcanvasToggle"
-      class="btn btn-secondary offcanvas-toggle"
-      type="button"
-      data-bs-toggle="offcanvas"
-      data-bs-target="#offcanvasBottom"
-      aria-controls="offcanvasBottom"
-    >
-      <i class="bi bi-calendar-week"></i> Costumized Timeline
-    </button>
+    <div class="button-container">
+      <div class="d-grid gap-2">
+        <button
+          id="deleteCookiesBtn"
+          class="btn btn-danger delete-cookies"
+          type="button"
+        >
+          <i class="bi bi-trash"></i> Delete Saved Lineup
+        </button>
+        <button
+          id="offcanvasToggle"
+          class="btn btn-secondary offcanvas-toggle"
+          type="button"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#offcanvasBottom"
+          aria-controls="offcanvasBottom"
+        >
+          <i class="bi bi-calendar-week"></i> Customized Timeline
+        </button>
+      </div>
+    </div>
 
     <!-- Offcanvas -->
     <div
@@ -203,15 +218,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Delete Cookies button -->
-    <button
-      id="deleteCookiesBtn"
-      class="btn btn-danger delete-cookies d-none"
-      type="button"
-    >
-      <i class="bi bi-trash"></i> Delete Saved Lineup
-    </button>
 
     <!-- Confirmation Modal -->
     <div
@@ -595,14 +601,11 @@
       }
 
       function showActionButtons(show) {
-        const deleteCookiesBtn = document.getElementById("deleteCookiesBtn");
-        const offcanvasToggle = document.getElementById("offcanvasToggle");
+        const buttonContainer = document.querySelector(".button-container");
         if (show) {
-          deleteCookiesBtn.classList.remove("d-none");
-          offcanvasToggle.classList.remove("d-none");
+          buttonContainer.style.display = "block";
         } else {
-          deleteCookiesBtn.classList.add("d-none");
-          offcanvasToggle.classList.add("d-none");
+          buttonContainer.style.display = "none";
         }
       }
 
