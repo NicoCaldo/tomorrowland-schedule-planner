@@ -232,11 +232,18 @@
       }
 
       function showNextArtists() {
+        if (selectedArtists.length === 0) {
+          showInitialArtists();
+          return;
+        }
+
         const lastSelectedArtist = selectedArtists[selectedArtists.length - 1];
         const endTime = moment(lastSelectedArtist.endTime);
         const nextArtists = performances.filter(
           (p) =>
-            p.day === days[currentDayIndex] && moment(p.startTime) > endTime
+            p.day === lastSelectedArtist.day &&
+            moment(p.startTime) >= endTime &&
+            !selectedArtists.some((selected) => selected.id === p.id)
         );
 
         const uniqueStageArtists = nextArtists.reduce((acc, curr) => {
@@ -345,17 +352,67 @@
       }
 
       function removeArtist(index) {
+        const removedArtist = selectedArtists[index];
         selectedArtists.splice(index, 1);
         updateOffcanvasContent();
         saveSelectedArtistsToCookie();
-        if (selectedArtists.length > 0) {
+
+        if (index < selectedArtists.length) {
+          showReplacementOptions(removedArtist, index);
+        } else if (selectedArtists.length > 0) {
           showNextArtists();
         } else {
           showInitialArtists();
         }
       }
 
-      loadData();
+      function findReplacementOptions(removedArtist) {
+        return performances.filter(
+          (artist) =>
+            artist.day === removedArtist.day &&
+            artist.startTime === removedArtist.startTime &&
+            artist.endTime === removedArtist.endTime &&
+            !selectedArtists.some((selected) => selected.id === artist.id)
+        );
+      }
+
+      function showReplacementOptions(removedArtist, insertIndex) {
+        const replacementArtists = performances.filter(
+          (artist) =>
+            artist.day === removedArtist.day &&
+            artist.startTime === removedArtist.startTime &&
+            artist.endTime === removedArtist.endTime &&
+            !selectedArtists.some((selected) => selected.id === artist.id)
+        );
+
+        if (replacementArtists.length === 0) {
+          showNextArtists();
+          return;
+        }
+
+        document.getElementById(
+          "currentSelection"
+        ).innerHTML = `<h2>Choose a replacement for ${removedArtist.name}:</h2>`;
+
+        const artistSelector = document.getElementById("artistSelector");
+        artistSelector.innerHTML = "";
+
+        replacementArtists.forEach((artist) => {
+          const card = createArtistCard(artist);
+          artistSelector.appendChild(card);
+        });
+
+        // Modify the selectArtist function temporarily
+        const originalSelectArtist = selectArtist;
+        selectArtist = (artistId) => {
+          const selectedArtist = performances.find((p) => p.id === artistId);
+          selectedArtists.splice(insertIndex, 0, selectedArtist);
+          updateOffcanvasContent();
+          saveSelectedArtistsToCookie();
+          selectArtist = originalSelectArtist; // Restore original function
+          showNextArtists();
+        };
+      }
 
       function loadSelectedArtistsFromCookie() {
         const savedArtists = Cookies.get("selectedArtists");
@@ -370,6 +427,18 @@
           expires: 7,
         }); // Expires in 7 days
       }
+
+      function findReplacementOptions(removedArtist) {
+        return performances.filter(
+          (artist) =>
+            artist.day === removedArtist.day &&
+            artist.startTime === removedArtist.startTime &&
+            artist.endTime === removedArtist.endTime &&
+            !selectedArtists.some((selected) => selected.id === artist.id)
+        );
+      }
+
+      loadData();
 
       // New code for toggling the menu button visibility
       document.addEventListener("DOMContentLoaded", (event) => {
