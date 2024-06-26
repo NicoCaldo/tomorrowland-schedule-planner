@@ -296,10 +296,21 @@
 
         const lastSelectedArtist = selectedArtists[selectedArtists.length - 1];
         const endTime = moment(lastSelectedArtist.endTime);
+        const startTime = moment(lastSelectedArtist.startTime);
+        const isFirstArtistOfDay = startTime.format("HH:mm") === "12:00";
+
+        const startTimeThreshold = isFirstArtistOfDay
+          ? moment(startTime).hour(12).minute(30)
+          : moment(endTime).subtract(30, "minutes");
+
+        // TODO remove MC from the filter
+
         const nextArtists = performances.filter(
           (p) =>
             p.day === lastSelectedArtist.day &&
-            moment(p.startTime) >= endTime &&
+            moment(p.startTime) >= startTimeThreshold &&
+            moment(p.startTime) <= endTime &&
+            p.id !== lastSelectedArtist.id &&
             !selectedArtists.some((selected) => selected.id === p.id)
         );
 
