@@ -79,12 +79,10 @@
       .select-artist-text {
         margin-left: 5px;
       }
-      /* Add this new style for the image container */
       .image-container {
         padding: 1rem;
         padding-bottom: 0; /* Remove bottom padding as it's handled by card-body */
       }
-      /* Update placeholder SVG styles */
       .placeholder-svg {
         display: none;
         max-height: 80px;
@@ -160,7 +158,6 @@
       .footer a:hover {
         text-decoration: underline;
       }
-      /* New styles for full-width navbar */
       .navbar-wrapper {
         width: 100vw;
         position: relative;
@@ -174,6 +171,10 @@
         max-width: 1000px;
         margin: 0 auto;
         padding: 0 20px;
+      }
+      .custom-end-time {
+        width: 100%;
+        margin-bottom: 10px;
       }
       /* Responsive adjustments */
       @media (max-width: 992px) {
@@ -446,31 +447,53 @@
         const card = document.createElement("div");
         card.classList.add("card", "text-bg-dark", "artist-card");
 
+        const startTime = moment(artist.startTime);
+        const endTime = moment(artist.endTime);
+
         card.innerHTML = `
-          <div class="image-container">
-            <img src="${
-              artist.artists[0].image
-            }?width=250" class="card-img-top img-thumbnail" alt="${
+    <div class="image-container">
+      <img src="${
+        artist.artists[0].image
+      }?width=250" class="card-img-top img-thumbnail" alt="${
           artist.name
         }" onerror="showPlaceholder(this);">
-            <svg class="bd-placeholder-img card-img-top placeholder-svg img-thumbnail" style="display:none;" width="100%" height="80" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder" preserveAspectRatio="xMidYMid slice" focusable="false">
-              <rect width="100%" height="100%" fill="#868e96"></rect>
-            </svg>
-          </div>
-          <div class="card-body">
-            <h5 class="card-title">${artist.name}</h5>
-            <p class="card-text">${artist.stage.name}</p>
-            <p class="card-text">${formatTime(artist.startTime)} - ${formatTime(
+      <svg class="bd-placeholder-img card-img-top placeholder-svg img-thumbnail" style="display:none;" width="100%" height="80" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder" preserveAspectRatio="xMidYMid slice" focusable="false">
+        <rect width="100%" height="100%" fill="#868e96"></rect>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h5 class="card-title">${artist.name}</h5>
+      <p class="card-text">${artist.stage.name}</p>
+      <p class="card-text">${formatTime(artist.startTime)} - ${formatTime(
           artist.endTime
         )}</p>
-          </div>
-          <button class="btn btn-primary select-artist" data-artist-id="${
-            artist.id
-          }">
-            <i class="bi bi-plus-circle-fill"></i>
-            <span class="select-artist-text">Select</span>
-          </button>
-        `;
+      <label for="custom-end-time-${artist.id}">Custom end time:</label>
+      <input type="time" id="custom-end-time-${
+        artist.id
+      }" class="form-control custom-end-time" 
+             min="${startTime.format("HH:mm")}" 
+             max="${endTime.format("HH:mm")}" 
+             step="300">
+    </div>
+    <button class="btn btn-primary select-artist" data-artist-id="${artist.id}">
+      <i class="bi bi-plus-circle-fill"></i>
+      <span class="select-artist-text">Select</span>
+    </button>
+  `;
+
+        const timeInput = card.querySelector(".custom-end-time");
+        timeInput.addEventListener("change", function () {
+          const selectedTime = moment(this.value, "HH:mm");
+          if (
+            selectedTime.isBefore(startTime) ||
+            selectedTime.isAfter(endTime)
+          ) {
+            alert(
+              "Please select a time within the artist's performance interval."
+            );
+            this.value = endTime.format("HH:mm");
+          }
+        });
 
         card
           .querySelector(".select-artist")
@@ -481,6 +504,22 @@
 
       function selectArtist(artistId) {
         const selectedArtist = performances.find((p) => p.id === artistId);
+        const customEndTimeInput = document.querySelector(
+          `#custom-end-time-${artistId}`
+        );
+        const customEndTime = customEndTimeInput.value;
+
+        if (customEndTime) {
+          const [hours, minutes] = customEndTime.split(":");
+          const customEndMoment = moment(selectedArtist.startTime).set({
+            hour: parseInt(hours),
+            minute: parseInt(minutes),
+            second: 0,
+          });
+
+          selectedArtist.customEndTime = customEndMoment.format();
+        }
+
         selectedArtists.push(selectedArtist);
         updateOffcanvasContent();
         saveSelectedArtistsToCookie();
@@ -495,15 +534,15 @@
         }
 
         const lastSelectedArtist = selectedArtists[selectedArtists.length - 1];
-        const endTime = moment(lastSelectedArtist.endTime);
+        const endTime = moment(
+          lastSelectedArtist.customEndTime || lastSelectedArtist.endTime
+        );
         const startTime = moment(lastSelectedArtist.startTime);
         const isFirstArtistOfDay = startTime.format("HH:mm") === "12:00";
 
         const startTimeThreshold = isFirstArtistOfDay
           ? moment(startTime).hour(12).minute(30)
           : moment(endTime).subtract(30, "minutes");
-
-        // TODO remove MC from the filter
 
         const nextArtists = performances.filter(
           (p) =>
@@ -534,9 +573,15 @@
           return;
         }
 
-        document.getElementById(
-          "currentSelection"
-        ).innerHTML = `<h2>Choose next artist after ${lastSelectedArtist.name}:</h2>`;
+        const messageElement = document.getElementById("currentSelection");
+        if (lastSelectedArtist.customEndTime) {
+          const customEndTimeFormatted = moment(
+            lastSelectedArtist.customEndTime
+          ).format("HH:mm");
+          messageElement.innerHTML = `<h2>Choose next artist after ${lastSelectedArtist.name} (custom end time: ${customEndTimeFormatted}):</h2>`;
+        } else {
+          messageElement.innerHTML = `<h2>Choose next artist after ${lastSelectedArtist.name}:</h2>`;
+        }
 
         const artistSelector = document.getElementById("artistSelector");
         artistSelector.innerHTML = "";
@@ -610,7 +655,7 @@
                 <small>${artist.stage.name}</small><br>
                 <small>${artist.day}</small><br>
                 <small>${formatTime(artist.startTime)} - ${formatTime(
-              artist.endTime
+              artist.customEndTime || artist.endTime
             )}</small>
               <button class="btn btn-sm btn-danger mt-2" onclick="removeArtist(${index})">Remove</button>
               </div>
